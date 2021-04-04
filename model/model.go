@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
+	"strings"
 )
 
 type AppStruct struct {
@@ -40,6 +41,54 @@ func GetApp() *AppStruct {
 	return &AppStruct{DBConn: db}
 }
 
+func (a *AppStruct) GetAnswers(questionIds []string) ([]Question, error) {
+	if len(questionIds) == 0 {
+		return nil, nil
+	}
+	questionString := strings.Join(questionIds, "','")
+	result, err := a.DBConn.Query(fmt.Sprintf("select question_uuid,question_text,answer_json,correct_answer from questions where question_uuid in(%s)", "'"+questionString+"'"))
+	if err != nil {
+		logger.Error(err)
+		return nil, err
+	}
+
+	var answers []Question
+	for result.Next() {
+		var question_uuid sql.NullString
+		var question_text sql.NullString
+		var answer_json sql.NullString
+		var correct_answer sql.NullInt64
+		var q Question
+		if err := result.Scan(&question_uuid, &question_text, &answer_json, &correct_answer); err != nil {
+			logger.Error(err)
+			return nil, err
+		}
+
+		if question_uuid.Valid {
+			q.ID = question_uuid.String
+		}
+
+		if question_text.Valid {
+			q.Text = question_text.String
+		}
+
+		if answer_json.Valid {
+			var answerSlice []string
+
+			if err := json.Unmarshal([]byte(answer_json.String), &answerSlice); err != nil {
+				logger.Error(err)
+			}
+			q.Answers = answerSlice
+		}
+
+		if correct_answer.Valid {
+			q.Correct = int(correct_answer.Int64)
+		}
+		answers = append(answers, q)
+
+	}
+	return answers, nil
+}
 func (a *AppStruct) GetQuestionByID(ID string) (*Question, error) {
 	result := a.DBConn.QueryRow(fmt.Sprintf("select question_uuid,question_text,answer_json,correct_answer from questions where question_uuid='%s'", ID))
 	var question_uuid sql.NullString
