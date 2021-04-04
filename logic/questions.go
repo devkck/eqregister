@@ -7,8 +7,14 @@ import (
 	"fmt"
 )
 
+var app *model.AppStruct
+
+func init() {
+
+	app = model.GetApp()
+}
+
 func CalculateScore(questionIds []string, candidateAnswers []model.Question) (int, error) {
-	app := model.GetApp()
 	correctAnswers, err := app.GetAnswers(questionIds)
 	if err != nil {
 		log.Error(err)
@@ -31,5 +37,11 @@ func CalculateScore(questionIds []string, candidateAnswers []model.Question) (in
 		}
 	}
 	return answerdCorrectly, nil
+}
 
+func GetQuestionByID(questionID string) (*model.Question, error) {
+	if questionID == "" {
+		return nil, errors.New("id is empty")
+	}
+	return app.GetQuestionByID(questionID)
 }
