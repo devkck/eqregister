@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	logger "eqregister/log"
+	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
@@ -15,10 +16,10 @@ type AppStruct struct {
 }
 
 type Question struct {
-	ID      string
-	Text    string
-	Answers []string
-	Correct int
+	ID      string        `json:"id"`
+	Text    string        `json:"text"`
+	Answers []string      `json:"answers"`
+	Correct int           `json:"correct"`
 }
 
 var db *sql.DB
@@ -89,6 +90,7 @@ func (a *AppStruct) GetAnswers(questionIds []string) ([]Question, error) {
 	}
 	return answers, nil
 }
+
 func (a *AppStruct) GetQuestionByID(ID string) (*Question, error) {
 	result := a.DBConn.QueryRow(fmt.Sprintf("select question_uuid,question_text,answer_json,correct_answer from questions where question_uuid='%s'", ID))
 	var question_uuid sql.NullString
@@ -125,16 +127,53 @@ func (a *AppStruct) GetQuestionByID(ID string) (*Question, error) {
 	return &q, nil
 }
 
-func (a *AppStruct) InsertQuestion(q *Question) error {
-	answers, err := json.Marshal(q.Answers)
+func (a *AppStruct) IsValidID(ID string) (bool, error) {
+
+	question, err := a.GetQuestionByID(ID)
 	if err != nil {
-		return err
+		return false, err
+	}
+	if question.ID == "" {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (a *AppStruct) UpdateQuestion(question Question) (*Question,error) {
+	if question.ID == "" {
+		return nil,errors.New("invalid id")
 	}
 
+	if len(question.Answers) < question.Correct || question.Correct < 0 {
+		return nil,errors.New(" invalid correct answer index")
+	}
+
+	answerJson, err := json.Marshal(question.Answers)
+	if err != nil {
+		return nil,err
+	}
+	query := fmt.Sprintf("update questions set question_text='%s', answer_json='%s', correct_answer='%d' where question_uuid='%s'", question.Text, string(answerJson), question.Correct, question.ID)
+
+	_, err = a.DBConn.Exec(query)
+	if err != nil {
+		return nil,err
+	}
+	return &question,nil
+}
+
+func (a *AppStruct) InsertQuestion(q *Question) (*Question,error) {
+	
+    if len(q.Answers) < q.Correct || q.Correct < 0 {
+		return nil,errors.New(" invalid correct answer index")
+	}
+	answers, err := json.Marshal(q.Answers)
+	if err != nil {
+		return nil,err
+	}
 	q.ID = uuid.NewString()
 	_, err = a.DBConn.Exec(fmt.Sprintf("INSERT into questions (question_uuid,question_text,answer_json,correct_answer) values ( '%s', '%s', '%s', '%d' );", q.ID, q.Text, string(answers), q.Correct))
 	if err != nil {
-		return err
+		return nil,err
 	}
-	return nil
+	return q,nil
 }

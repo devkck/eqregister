@@ -14,7 +14,24 @@ func init() {
 	app = model.GetApp()
 }
 
-func CalculateScore(questionIds []string, candidateAnswers []model.Question) (int, error) {
+func UpdateQuestionByID(question model.Question) (*model.Question,error) {
+	if valid, err := app.IsValidID(question.ID); err != nil || !valid {
+		return nil,errors.New("ID invalid")
+	}
+
+	q,err := app.UpdateQuestion(question)
+	if err != nil {
+		return nil,err
+	}
+
+	return q,nil
+}
+
+func CalculateScore(candidateAnswers []model.Question) (int, error) {
+	var questionIds []string
+	for _, val := range candidateAnswers {
+		questionIds = append(questionIds, val.ID)
+	}
 	correctAnswers, err := app.GetAnswers(questionIds)
 	if err != nil {
 		log.Error(err)
@@ -44,4 +61,7 @@ func GetQuestionByID(questionID string) (*model.Question, error) {
 		return nil, errors.New("id is empty")
 	}
 	return app.GetQuestionByID(questionID)
+}
+func InsertQuestion(q *model.Question) (*model.Question,error) {
+	return app.InsertQuestion(q)
 }

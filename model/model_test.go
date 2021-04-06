@@ -25,6 +25,17 @@ func TestGetQuestionByID(t *testing.T) {
 	}
 	fmt.Println(question)
 }
+func TestUpdateQuestion(t *testing.T) {
+	app := GetApp()
+	err := app.UpdateQuestion(
+		Question{
+			ID: "42dca56a-68ff-4c2d-9562-b24d701d1e99", Text: "new question",
+			Answers: []string{"new answer", "three four answer", "five and size"},
+			Correct: 2})
+	if err != nil {
+		t.Error(err)
+	}
+}
 func TestGetAnswers(t *testing.T) {
 	app := GetApp()
 	question, err := app.GetQuestionByID("42dca56a-68ff-4c2d-9562-b24d701d1e99")
