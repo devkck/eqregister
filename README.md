@@ -1,11 +1,11 @@
 ## Questions API
-built on echo frame work
-uses postgresql
-runs on port 8181
+- built on echo frame work
+- uses postgresql
+- runs on port 8181
 
 to run run/build/install `main.go`
 
-	/questions
+	/question
 		POST	insert new question
 		`{
 			text:"what is the answer"
