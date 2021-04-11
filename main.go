@@ -12,6 +12,6 @@ func main() {
 	e.GET("/question/:id", api.GetQuestionByIDHandler)
 	e.PUT("/question/:id", api.UpdateQuestionByIDHandler)
 	e.POST("/question", api.InsertQuestionHandler)
-	e.GET("/score", api.CalculateScoreHandler)
+	e.POST("/answers", api.CalculateScoreHandler)
 	e.Start(":8181")
 }
